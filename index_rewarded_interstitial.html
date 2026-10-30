@@ -1,0 +1,306 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#111827">
+
+    <title>My Telegram Mini App</title>
+
+    <!-- Telegram Mini App SDK -->
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            min-height: 100vh;
+            font-family: Arial, sans-serif;
+            background: linear-gradient(145deg, #111827, #1e293b);
+            color: white;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .app {
+            width: 100%;
+            max-width: 420px;
+            padding: 30px 22px;
+            text-align: center;
+            border-radius: 22px;
+            background: rgba(255,255,255,0.07);
+            border: 1px solid rgba(255,255,255,0.12);
+            box-shadow: 0 18px 50px rgba(0,0,0,0.25);
+        }
+
+        .logo {
+            font-size: 50px;
+            margin-bottom: 15px;
+        }
+
+        h1 {
+            font-size: 26px;
+            margin-bottom: 10px;
+        }
+
+        .description {
+            color: #cbd5e1;
+            line-height: 1.6;
+            margin-bottom: 25px;
+        }
+
+        button {
+            width: 100%;
+            padding: 16px;
+            border: none;
+            border-radius: 13px;
+            background: #229ed9;
+            color: white;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        #status {
+            min-height: 24px;
+            margin-top: 18px;
+            color: #cbd5e1;
+            font-size: 13px;
+        }
+
+        .footer {
+            color: #94a3b8;
+            font-size: 12px;
+            margin-top: 22px;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="app">
+
+        <div class="logo">🚀</div>
+
+        <h1>Welcome!</h1>
+
+        <p class="description">
+            Welcome to my Telegram Mini App.
+            Click the button below to view an advertisement.
+        </p>
+
+        <button id="adButton" disabled>
+            Loading Advertisement...
+        </button>
+
+        <div id="status">
+            Please wait...
+        </div>
+
+        <div class="footer">
+            Powered by Monetag
+        </div>
+
+    </div>
+
+    <script>
+
+    // =====================================
+    // MONETAG CONFIGURATION
+    // =====================================
+
+    const MONETAG_CONFIG = {
+
+        SDK_URL: "https://libtl.com/sdk.js",
+
+        ZONE_ID: "12150063",
+
+        ENABLE_ADS: true
+
+    };
+
+
+    // =====================================
+    // TELEGRAM INITIALIZATION
+    // =====================================
+
+    if (window.Telegram && window.Telegram.WebApp) {
+
+        Telegram.WebApp.ready();
+
+        Telegram.WebApp.expand();
+
+    }
+
+
+    // =====================================
+    // AD SYSTEM
+    // =====================================
+
+    const adButton = document.getElementById("adButton");
+
+    const statusBox = document.getElementById("status");
+
+    const sdkFunction = "show_" + MONETAG_CONFIG.ZONE_ID;
+
+
+    function setStatus(message) {
+
+        statusBox.textContent = message;
+
+    }
+
+
+    // =====================================
+    // LOAD MONETAG SDK
+    // =====================================
+
+    function loadMonetagSDK() {
+
+        if (!MONETAG_CONFIG.ENABLE_ADS) {
+
+            adButton.textContent = "Ads Disabled";
+
+            setStatus("Advertisements are disabled.");
+
+            return;
+
+        }
+
+        const script = document.createElement("script");
+
+        script.src = MONETAG_CONFIG.SDK_URL;
+
+        script.async = true;
+
+        script.dataset.zone = MONETAG_CONFIG.ZONE_ID;
+
+        script.dataset.sdk = sdkFunction;
+
+        script.onload = function() {
+
+            if (typeof window[sdkFunction] === "function") {
+
+                adButton.disabled = false;
+
+                adButton.textContent = "Watch Advertisement";
+
+                setStatus("Advertisement system is ready.");
+
+            } else {
+
+                sdkError();
+
+            }
+
+        };
+
+        script.onerror = sdkError;
+
+        document.head.appendChild(script);
+
+    }
+
+
+    // =====================================
+    // SDK ERROR HANDLING
+    // =====================================
+
+    function sdkError() {
+
+        adButton.disabled = true;
+
+        adButton.textContent = "Advertisement Unavailable";
+
+        setStatus("Could not load Monetag SDK. Check your configuration.");
+
+    }
+
+
+    // =====================================
+    // SHOW REWARDED POPUP
+    // =====================================
+
+    adButton.addEventListener("click", function() {
+
+        if (!MONETAG_CONFIG.ENABLE_ADS) {
+
+            return;
+
+        }
+
+        const showAd = window[sdkFunction];
+
+        if (typeof showAd !== "function") {
+
+            setStatus("Advertisement is not ready.");
+
+            return;
+
+        }
+
+        try {
+
+            // Monetag Rewarded Interstitial
+            // Omitting the "type" option uses the SDK's default Rewarded Interstitial mode.
+
+            const result = showAd({
+
+                requestVar: "main_ad_button"
+
+            });
+
+            Promise.resolve(result)
+
+                .then(function(adResult) {
+
+                    if (adResult && adResult.reward_event_type === "valued") {
+                        setStatus("Ad completed. Monetag confirmed the reward.");
+                    } else {
+                        setStatus("Ad closed. No reward was confirmed.");
+                    }
+
+                })
+
+                .catch(function(error) {
+
+                    console.error("Monetag Error:", error);
+
+                    setStatus("No advertisement available right now. Please try again later.");
+
+                });
+
+        }
+
+        catch(error) {
+
+            console.error("Monetag Error:", error);
+
+            setStatus("Unable to show advertisement.");
+
+        }
+
+    });
+
+
+    // =====================================
+    // START AD SYSTEM
+    // =====================================
+
+    loadMonetagSDK();
+
+    </script>
+
+</body>
+</html>
