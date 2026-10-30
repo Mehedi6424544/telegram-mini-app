@@ -252,11 +252,10 @@
 
         try {
 
-            // Monetag Rewarded Popup
+            // Monetag Rewarded Interstitial
+            // Omitting the "type" option uses the SDK's default Rewarded Interstitial mode.
 
             const result = showAd({
-
-                type: "pop",
 
                 requestVar: "main_ad_button"
 
@@ -264,9 +263,13 @@
 
             Promise.resolve(result)
 
-                .then(function() {
+                .then(function(adResult) {
 
-                    setStatus("Advertisement request completed.");
+                    if (adResult && adResult.reward_event_type === "valued") {
+                        setStatus("Ad completed. Monetag confirmed the reward.");
+                    } else {
+                        setStatus("Ad closed. No reward was confirmed.");
+                    }
 
                 })
 
@@ -274,7 +277,7 @@
 
                     console.error("Monetag Error:", error);
 
-                    setStatus("No advertisement available right now.");
+                    setStatus("No advertisement available right now. Please try again later.");
 
                 });
 
@@ -284,7 +287,7 @@
 
             console.error("Monetag Error:", error);
 
-            setStatus("Unable to open advertisement.");
+            setStatus("Unable to show advertisement.");
 
         }
 
